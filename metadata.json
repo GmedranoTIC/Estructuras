@@ -1,0 +1,6 @@
+{
+  "name": "Cargo Bridge",
+  "description": "Juego clásico de física y construcción de puentes con controles táctiles adaptados, simulación de estrés y compatible con GitHub Pages.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
