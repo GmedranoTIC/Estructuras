@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Star, Lock, CheckCircle2, Download, Upload, AlertCircle, Sparkles } from 'lucide-react';
+import { X, Star, Lock, CheckCircle2, Download, Upload, AlertCircle, Sparkles, BookOpen } from 'lucide-react';
 import { LevelDef, LevelProgress } from '../types';
 import { exportProgressAsJSON, importProgressFromJSON } from '../game/levels';
 import { sound } from '../game/audio';
@@ -11,6 +11,7 @@ interface LevelSelectModalProps {
   onSelectLevel: (levelId: number) => void;
   onUpdateProgress: (newProgress: Record<number, LevelProgress>) => void;
   onClose: () => void;
+  onOpenCover?: () => void;
 }
 
 export const LevelSelectModal: React.FC<LevelSelectModalProps> = ({
@@ -20,6 +21,7 @@ export const LevelSelectModal: React.FC<LevelSelectModalProps> = ({
   onSelectLevel,
   onUpdateProgress,
   onClose,
+  onOpenCover,
 }) => {
   const [lockedNotice, setLockedNotice] = useState<string | null>(null);
   const [shakeId, setShakeId] = useState<number | null>(null);
@@ -162,14 +164,31 @@ export const LevelSelectModal: React.FC<LevelSelectModalProps> = ({
             </p>
           </div>
 
-          <button
-            id="btn-close-levels-modal"
-            onClick={onClose}
-            className="p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"
-            title="Cerrar"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {onOpenCover && (
+              <button
+                id="btn-goto-cover-from-levels"
+                onClick={() => {
+                  sound.playClick();
+                  onOpenCover();
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-sm"
+                title="Ir a la Portada del juego"
+              >
+                <BookOpen className="w-4 h-4 text-amber-400" />
+                <span>Portada</span>
+              </button>
+            )}
+
+            <button
+              id="btn-close-levels-modal"
+              onClick={onClose}
+              className="p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"
+              title="Cerrar"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Action Bar: Save / Load JSON Progress */}

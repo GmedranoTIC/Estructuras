@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Star, ArrowRight, RotateCcw, Map, Award, DollarSign } from 'lucide-react';
+import { Star, ArrowRight, RotateCcw, Map, Award, DollarSign, Camera } from 'lucide-react';
 import { LevelDef } from '../types';
 
 interface VictoryModalProps {
@@ -9,9 +9,11 @@ interface VictoryModalProps {
   moneySpent: number;
   stars: number;
   hasNextLevel: boolean;
+  playerName?: string;
   onNextLevel: () => void;
   onReplay: () => void;
   onOpenLevels: () => void;
+  onTakeScreenshot?: () => void;
 }
 
 export const VictoryModal: React.FC<VictoryModalProps> = ({
@@ -20,9 +22,11 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   moneySpent,
   stars,
   hasNextLevel,
+  playerName,
   onNextLevel,
   onReplay,
   onOpenLevels,
+  onTakeScreenshot,
 }) => {
   useEffect(() => {
     // Launch festive confetti bursts
@@ -93,7 +97,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         </div>
 
         {/* Score & Budget Card */}
-        <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-4 mb-6 space-y-2.5 text-left text-sm">
+        <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-4 mb-4 space-y-2.5 text-left text-sm">
           <div className="flex justify-between items-center text-slate-300">
             <span className="text-slate-400">Presupuesto inicial:</span>
             <span className="font-mono font-bold">${level.budget}</span>
@@ -116,6 +120,18 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             Meta 3 estrellas: Ahorrar al menos ${level.threeStarBudget}
           </div>
         </div>
+
+        {/* Diploma / Screenshot Action Button */}
+        {onTakeScreenshot && (
+          <button
+            id="btn-victory-take-screenshot"
+            onClick={onTakeScreenshot}
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 mb-3 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-amber-500/20 active:scale-98 transition-all cursor-pointer"
+          >
+            <Camera className="w-4 h-4 stroke-[2.5]" />
+            <span>📸 Captura / Diploma con tu Nombre ({playerName || 'Ingeniero/a'})</span>
+          </button>
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-2.5">

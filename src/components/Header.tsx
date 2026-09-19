@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, RotateCcw, Volume2, VolumeX, HelpCircle, Map, Maximize2, ShieldAlert, BookOpen } from 'lucide-react';
+import { Play, RotateCcw, Volume2, VolumeX, HelpCircle, Map, Maximize2, ShieldAlert, BookOpen, User } from 'lucide-react';
 import { LevelDef } from '../types';
 
 interface HeaderProps {
@@ -8,6 +8,7 @@ interface HeaderProps {
   budgetRemaining: number;
   moneySpent: number;
   soundEnabled: boolean;
+  playerName?: string;
   onToggleMode: () => void;
   onResetSimulation: () => void;
   onToggleSound: () => void;
@@ -23,6 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
   budgetRemaining,
   moneySpent,
   soundEnabled,
+  playerName,
   onToggleMode,
   onResetSimulation,
   onToggleSound,
@@ -69,6 +71,16 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden lg:inline-block px-1.5 py-0.5 rounded text-[10px] font-mono bg-sky-950/70 text-sky-400 border border-sky-800/50">
               @GmedranoTIC
             </span>
+            {playerName && (
+              <button
+                onClick={onOpenCover}
+                className="hidden xl:flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition-colors cursor-pointer"
+                title="Editar nombre de alumno/a en Portada"
+              >
+                <User className="w-3 h-3 text-amber-400" />
+                <span className="truncate max-w-[120px]">{playerName}</span>
+              </button>
+            )}
           </div>
           <p className="text-slate-400 text-xs truncate hidden sm:block">
             {level.subtitle}

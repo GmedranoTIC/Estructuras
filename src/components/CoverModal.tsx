@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { Play, Map, BookOpen, Sparkles, Award, ShieldCheck, HelpCircle, X, ChevronRight } from 'lucide-react';
+import { Play, Map, BookOpen, Sparkles, Award, ShieldCheck, HelpCircle, X, ChevronRight, User, AlertCircle } from 'lucide-react';
 import { sound } from '../game/audio';
+import coverImg from '../assets/images/cover_man_gmedranotic_1789815062885.jpg';
 
 interface CoverModalProps {
   isOpen: boolean;
+  playerName: string;
+  onUpdatePlayerName: (name: string) => void;
   onStartGame: () => void;
   onOpenLevels: () => void;
   onOpenHelp: () => void;
@@ -14,6 +17,8 @@ interface CoverModalProps {
 
 export const CoverModal: React.FC<CoverModalProps> = ({
   isOpen,
+  playerName,
+  onUpdatePlayerName,
   onStartGame,
   onOpenLevels,
   onOpenHelp,
@@ -22,10 +27,17 @@ export const CoverModal: React.FC<CoverModalProps> = ({
   totalLevelsCount,
 }) => {
   const [showDidacticGuide, setShowDidacticGuide] = useState<boolean>(false);
+  const [nameError, setNameError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleStart = () => {
+    if (!playerName.trim()) {
+      setNameError('Por favor, escribe tu nombre para registrarlo en tus diplomas y capturas.');
+      sound.playLockBuzz();
+      return;
+    }
+    setNameError(null);
     sound.playClick();
     onStartGame();
   };
@@ -43,83 +55,118 @@ export const CoverModal: React.FC<CoverModalProps> = ({
   return (
     <div
       id="cover-modal-overlay"
-      className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-300"
+      className="fixed inset-0 z-50 bg-slate-950/92 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-300"
     >
       <div
         id="cover-modal-card"
-        className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-2xl w-full p-5 sm:p-7 shadow-2xl relative flex flex-col items-center text-center overflow-hidden my-auto"
+        className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-3xl w-full p-4 sm:p-7 shadow-2xl relative flex flex-col items-center text-center overflow-hidden my-auto"
       >
-        {/* Subtle Watermark in top-right */}
-        <div className="absolute top-4 right-4 flex items-center gap-2 select-none">
-          <span className="text-[11px] font-mono tracking-wider font-semibold text-slate-400/70 bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700/60">
-            @GmedranoTIC
+        {/* Top Watermark & Close Button */}
+        <div className="w-full flex items-center justify-between pb-1 select-none">
+          <span className="text-[11px] font-mono tracking-wider font-semibold text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700/60">
+            @GmedranoTIC • Tecnología ESO
           </span>
           <button
             id="btn-close-cover"
             onClick={onClose}
             className="p-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
-            title="Cerrar portada y jugar"
+            title="Cerrar portada y continuar al juego"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Cover Photo / Portrait */}
-        <div className="relative mt-2 mb-4 group">
-          <div className="absolute -inset-1.5 bg-gradient-to-r from-amber-500/40 via-sky-500/40 to-emerald-500/40 rounded-2xl blur-md opacity-75 group-hover:opacity-100 transition duration-500" />
-          <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden border-2 border-slate-600/80 shadow-xl bg-slate-950">
-            <img
-              src="/cover.jpg"
-              alt="Estructuras ESO @GmedranoTIC"
-              referrerPolicy="no-referrer"
-              className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-500"
-            />
-          </div>
-          <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-extrabold text-[10px] tracking-wider uppercase shadow-md whitespace-nowrap">
-            Estructuras ESO
-          </span>
+        {/* 16:9 Widescreen Cover Image - Bearded Teacher with GmedranoTIC T-shirt */}
+        <div className="relative w-full max-w-2xl aspect-video rounded-2xl overflow-hidden border-2 border-slate-600/80 shadow-2xl bg-slate-950 my-3 group">
+          <img
+            src={coverImg}
+            onError={(e) => {
+              // Fallback to relative public cover.jpg if needed
+              (e.currentTarget as HTMLImageElement).src = './cover.jpg';
+            }}
+            alt="Profesor de Tecnología ESO con camiseta GmedranoTIC"
+            className="w-full h-full object-cover object-center transform group-hover:scale-102 transition-transform duration-500"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
+          
+          <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between pointer-events-none">
+            <span className="px-3 py-1 rounded-full bg-amber-500 text-slate-950 font-black text-xs tracking-wider uppercase shadow-md">
+              Estructuras ESO • @GmedranoTIC
+            </span>
+                     </div>
         </div>
 
-        {/* Mandatory Teacher / Educational Attribution Text */}
-        <div className="my-2 max-w-lg">
+        {/* Title & Teacher Attribution Text */}
+        <div className="my-1.5 max-w-xl">
           <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center justify-center gap-2">
             <span>Cargo Bridge</span>
-            <span className="text-amber-400 text-xs px-2 py-0.5 rounded bg-amber-400/10 border border-amber-400/30">
+            <span className="text-amber-400 text-xs px-2.5 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 font-bold">
               {totalLevelsCount} Niveles
             </span>
           </h2>
-          <p className="mt-2 text-sm sm:text-base font-semibold text-sky-300 leading-relaxed bg-sky-950/40 border border-sky-800/40 rounded-xl py-2 px-3 shadow-inner">
+          <p className="mt-1.5 text-xs sm:text-sm font-semibold text-sky-300 leading-relaxed bg-sky-950/40 border border-sky-800/40 rounded-xl py-2 px-3 shadow-inner">
             Juego educativo para aprender estructuras en la ESO creado por <span className="text-amber-300 font-bold underline decoration-amber-500/50">@GmedranoTIC</span>
           </p>
         </div>
 
-        {/* Didactic Description */}
-        <p className="text-xs sm:text-sm text-slate-300 max-w-lg leading-relaxed mt-1 text-balance">
-          Pon a prueba tu ingenio construyendo puentes resistentes y económicos.
-          Aprende el comportamiento de la <strong className="text-amber-300 font-medium">tracción</strong>,{' '}
-          <strong className="text-sky-300 font-medium">compresión</strong>,{' '}
-          <strong className="text-emerald-300 font-medium">flexión</strong> y la{' '}
-          <strong className="text-purple-300 font-medium">triangulación indeformable</strong> con física realista en tiempo real.
-        </p>
+        {/* Student / Engineer Name Input (Prominently asked on start!) */}
+        <div className="w-full max-w-md bg-slate-950/80 border border-slate-800 rounded-2xl p-3 sm:p-4 my-2 text-left">
+          <label className="block text-xs font-bold text-amber-300 mb-1.5 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <User className="w-4 h-4 text-amber-400" />
+              <span>Tu Nombre (Alumno/a o Ingeniero/a):</span>
+            </span>
+            {playerName.trim() ? (
+              <span className="text-[10px] text-emerald-400 font-mono">✓ Registrado</span>
+            ) : (
+              <span className="text-[10px] text-amber-400 animate-pulse font-medium">Requerido para diplomas</span>
+            )}
+          </label>
+          <input
+            id="input-player-name"
+            type="text"
+            value={playerName}
+            onChange={(e) => {
+              setNameError(null);
+              onUpdatePlayerName(e.target.value);
+            }}
+            placeholder="Introduce tu nombre y apellidos..."
+            className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border text-white placeholder-slate-500 text-sm focus:outline-none transition-colors ${
+              nameError
+                ? 'border-rose-500 focus:border-rose-400 bg-rose-950/20'
+                : 'border-slate-700 focus:border-amber-400'
+            }`}
+          />
+          {nameError ? (
+            <p className="text-[11px] text-rose-400 flex items-center gap-1 mt-1.5 font-medium">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>{nameError}</span>
+            </p>
+          ) : (
+            <p className="text-[11px] text-slate-400 mt-1.5">
+              Este nombre se incrustará automáticamente en tus capturas de pantalla y diplomas al superar cada nivel.
+            </p>
+          )}
+        </div>
 
         {/* Progress & Feature Pills */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-xs">
+        <div className="flex flex-wrap items-center justify-center gap-2 mt-2 text-xs">
           <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800/90 text-slate-300 border border-slate-700/80">
             <Award className="w-3.5 h-3.5 text-amber-400" />
             Progreso: <strong>{completedLevelsCount} / {totalLevelsCount}</strong> niveles
           </span>
           <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800/90 text-slate-300 border border-slate-700/80">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            Resistencia en pendientes
+            Tracción, compresión y pandeo
           </span>
           <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800/90 text-slate-300 border border-slate-700/80">
             <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-            Guardado y carga JSON
+            Diplomas y Capturas PNG
           </span>
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-md mt-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-md mt-4">
           <button
             id="btn-cover-play"
             onClick={handleStart}
@@ -140,7 +187,7 @@ export const CoverModal: React.FC<CoverModalProps> = ({
         </div>
 
         {/* Quick Guide Toggle Button */}
-        <div className="flex items-center justify-center gap-3 mt-3.5">
+        <div className="flex items-center justify-center gap-3 mt-3">
           <button
             id="btn-cover-guide"
             onClick={() => setShowDidacticGuide(!showDidacticGuide)}
@@ -163,7 +210,7 @@ export const CoverModal: React.FC<CoverModalProps> = ({
 
         {/* Didactic Concepts Accordion */}
         {showDidacticGuide && (
-          <div className="mt-3 p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 text-left text-xs text-slate-300 w-full max-w-lg animate-in slide-in-from-top-2 duration-200">
+          <div className="mt-3 p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 text-left text-xs text-slate-300 w-full max-w-xl animate-in slide-in-from-top-2 duration-200">
             <h4 className="font-bold text-white mb-2 flex items-center gap-1.5 text-xs uppercase tracking-wider text-amber-400">
               <BookOpen className="w-3.5 h-3.5" /> Conceptos de Estructuras (Tecnología ESO)
             </h4>
@@ -188,7 +235,7 @@ export const CoverModal: React.FC<CoverModalProps> = ({
         )}
 
         {/* Footer */}
-        <div className="mt-4 pt-3 border-t border-slate-800/80 w-full flex items-center justify-between text-[11px] text-slate-400">
+        <div className="mt-3 pt-2.5 border-t border-slate-800/80 w-full flex items-center justify-between text-[11px] text-slate-400">
           <span>@GmedranoTIC</span>
           <span>Tecnología y Digitalización • ESO</span>
         </div>

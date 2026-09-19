@@ -6,6 +6,7 @@ import { FailureModal } from './components/FailureModal';
 import { LevelSelectModal } from './components/LevelSelectModal';
 import { InstructionsModal } from './components/InstructionsModal';
 import { CoverModal } from './components/CoverModal';
+import { ScreenshotModal } from './components/ScreenshotModal';
 import { LEVELS, loadLevelProgress, saveLevelProgress } from './game/levels';
 import { MATERIALS, calculateBeamCost } from './game/materials';
 import { PhysicsEngine } from './game/physics';
@@ -24,6 +25,24 @@ export default function App() {
   const currentLevel: LevelDef = LEVELS[levelIndex] || LEVELS[0];
   const [progress, setProgress] = useState<Record<number, LevelProgress>>(() => loadLevelProgress());
 
+  // Player Name for diplomas and certificates
+  const [playerName, setPlayerName] = useState<string>(() => {
+    try {
+      return localStorage.getItem('cargo_bridge_player_name') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const handleUpdatePlayerName = (name: string) => {
+    setPlayerName(name);
+    try {
+      localStorage.setItem('cargo_bridge_player_name', name);
+    } catch {
+      // ignore
+    }
+  };
+
   // Edit / Test mode
   const [mode, setMode] = useState<'edit' | 'test'>('edit');
   const [activeTool, setActiveTool] = useState<ToolType>('walkway');
@@ -35,6 +54,7 @@ export default function App() {
   const [showLevelModal, setShowLevelModal] = useState<boolean>(false);
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
   const [showVictoryModal, setShowVictoryModal] = useState<boolean>(false);
+  const [showScreenshotModal, setShowScreenshotModal] = useState<boolean>(false);
   const [showFailureModal, setShowFailureModal] = useState<boolean>(false);
   const [failureReason, setFailureReason] = useState<string>('');
   const [victoryStars, setVictoryStars] = useState<number>(3);
@@ -746,6 +766,7 @@ export default function App() {
         budgetRemaining={budgetRemaining}
         moneySpent={moneySpent}
         soundEnabled={soundEnabled}
+        playerName={playerName}
         onToggleMode={toggleMode}
         onResetSimulation={toggleMode}
         onToggleSound={() => setSoundEnabled(sound.toggleSound())}
@@ -827,6 +848,8 @@ export default function App() {
       {/* Initial / On-Demand Game Cover Screen */}
       <CoverModal
         isOpen={showCoverModal}
+        playerName={playerName}
+        onUpdatePlayerName={handleUpdatePlayerName}
         onStartGame={() => setShowCoverModal(false)}
         onOpenLevels={() => {
           setShowCoverModal(false);
@@ -849,6 +872,8 @@ export default function App() {
           moneySpent={moneySpent}
           stars={victoryStars}
           hasNextLevel={levelIndex < LEVELS.length - 1}
+          playerName={playerName}
+          onTakeScreenshot={() => setShowScreenshotModal(true)}
           onNextLevel={() => {
             setShowVictoryModal(false);
             handleNextLevel();
@@ -861,6 +886,29 @@ export default function App() {
             setShowVictoryModal(false);
             setShowLevelModal(true);
           }}
+        />
+      )}
+
+      {/* Official Diploma & Bridge Screenshot Modal */}
+      {showScreenshotModal && (
+        <ScreenshotModal
+          isOpen={showScreenshotModal}
+          onClose={() => setShowScreenshotModal(false)}
+          playerName={playerName}
+          onUpdatePlayerName={handleUpdatePlayerName}
+          level={currentLevel}
+          levelStars={victoryStars}
+          moneySpent={moneySpent}
+          budgetRemaining={budgetRemaining}
+          totalStars={Object.values(progress).reduce((acc, p) => acc + (p.stars || 0), 0)}
+          maxStars={LEVELS.length * 3}
+          totalMoneySaved={Object.values(progress).reduce(
+            (acc, p) => acc + (p.completed ? Math.max(0, p.bestBudgetRemaining) : 0),
+            0
+          )}
+          completedLevelsCount={Object.values(progress).filter((p) => p.completed).length}
+          totalLevelsCount={LEVELS.length}
+          canvasRef={canvasRef}
         />
       )}
 
@@ -895,6 +943,10 @@ export default function App() {
             setProgress(newProgress);
           }}
           onClose={() => setShowLevelModal(false)}
+          onOpenCover={() => {
+            setShowLevelModal(false);
+            setShowCoverModal(true);
+          }}
         />
       )}
 
