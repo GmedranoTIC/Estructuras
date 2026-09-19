@@ -5,6 +5,7 @@ import { VictoryModal } from './components/VictoryModal';
 import { FailureModal } from './components/FailureModal';
 import { LevelSelectModal } from './components/LevelSelectModal';
 import { InstructionsModal } from './components/InstructionsModal';
+import { CoverModal } from './components/CoverModal';
 import { LEVELS, loadLevelProgress, saveLevelProgress } from './game/levels';
 import { MATERIALS, calculateBeamCost } from './game/materials';
 import { PhysicsEngine } from './game/physics';
@@ -30,6 +31,7 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => sound.isEnabled());
 
   // Modals
+  const [showCoverModal, setShowCoverModal] = useState<boolean>(true);
   const [showLevelModal, setShowLevelModal] = useState<boolean>(false);
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
   const [showVictoryModal, setShowVictoryModal] = useState<boolean>(false);
@@ -68,6 +70,43 @@ export default function App() {
   const initialPinchZoomRef = useRef<number>(1);
   const lastPanPosRef = useRef<{ x: number; y: number } | null>(null);
 
+  const hasUserPannedRef = useRef<boolean>(false);
+
+  // Center and fit camera accurately to current level bounds & container dimensions
+  const centerCameraOnLevel = useCallback((lvl: LevelDef, customW?: number, customH?: number) => {
+    if (!containerRef.current) return;
+    const clientWidth = customW ?? containerRef.current.clientWidth;
+    const clientHeight = customH ?? containerRef.current.clientHeight;
+    if (!clientWidth || !clientHeight || clientWidth < 40 || clientHeight < 40) return;
+
+    // True world bounds of this specific level
+    const anchorXs = lvl.anchors.map((a) => a.x);
+    const anchorYs = lvl.anchors.map((a) => a.y);
+    const cargoXs = lvl.cargos.map((c) => c.x);
+
+    const minX = Math.min(lvl.leftStation.x - 20, ...anchorXs) - 30;
+    const maxX = Math.max(lvl.rightPlatform.x + 45, ...anchorXs, ...cargoXs) + 30;
+    const minY = Math.min(lvl.leftStation.y, lvl.rightPlatform.y, ...anchorYs) - 55;
+    const maxY = Math.max(lvl.terrain.waterY + 45, lvl.leftStation.y, lvl.rightPlatform.y, ...anchorYs) + 25;
+
+    const worldWidth = Math.max(380, maxX - minX);
+    const worldHeight = Math.max(280, maxY - minY);
+
+    // Provide comfortable framing margins
+    const zoomX = (clientWidth * 0.94) / worldWidth;
+    const zoomY = (clientHeight * 0.90) / worldHeight;
+    const targetZoom = Math.max(0.42, Math.min(zoomX, zoomY, 1.6));
+
+    const worldMidX = (minX + maxX) / 2;
+    const worldMidY = (minY + maxY) / 2;
+
+    cameraRef.current = {
+      zoom: targetZoom,
+      x: worldMidX - clientWidth / (2 * targetZoom),
+      y: worldMidY - clientHeight / (2 * targetZoom),
+    };
+  }, []);
+
   // Initialize level anchors when level changes
   const initLevel = useCallback((lvl: LevelDef) => {
     const initialJoints: Joint[] = lvl.anchors.map((a) => ({
@@ -89,61 +128,47 @@ export default function App() {
     setShowVictoryModal(false);
     setShowFailureModal(false);
     physicsRef.current = null;
+    hasUserPannedRef.current = false;
 
     // Center camera on the level
     centerCameraOnLevel(lvl);
-  }, []);
+  }, [centerCameraOnLevel]);
 
   useEffect(() => {
     initLevel(currentLevel);
   }, [currentLevel, initLevel]);
-
-  // Center and fit camera
-  const centerCameraOnLevel = (lvl: LevelDef) => {
-    if (!containerRef.current) return;
-    const { clientWidth, clientHeight } = containerRef.current;
-    if (clientWidth === 0 || clientHeight === 0) return;
-
-    // World bounds for Cargo Bridge levels
-    const minX = 40;
-    const maxX = 740;
-    const minY = 120;
-    const maxY = 560;
-
-    const worldWidth = maxX - minX;
-    const worldHeight = maxY - minY;
-
-    const zoomX = (clientWidth * 0.92) / worldWidth;
-    const zoomY = (clientHeight * 0.88) / worldHeight;
-    const targetZoom = Math.min(zoomX, zoomY, 1.4);
-
-    const worldMidX = (minX + maxX) / 2;
-    const worldMidY = (minY + maxY) / 2;
-
-    cameraRef.current = {
-      zoom: targetZoom,
-      x: worldMidX - clientWidth / (2 * targetZoom),
-      y: worldMidY - clientHeight / (2 * targetZoom),
-    };
-  };
 
   // Resize observer for responsive canvas
   useEffect(() => {
     const handleResize = () => {
       if (containerRef.current) {
         const { clientWidth, clientHeight } = containerRef.current;
-        setDimensions({ width: clientWidth, height: clientHeight });
+        if (clientWidth > 0 && clientHeight > 0) {
+          setDimensions({ width: clientWidth, height: clientHeight });
+          if (!hasUserPannedRef.current) {
+            centerCameraOnLevel(currentLevel, clientWidth, clientHeight);
+          }
+        }
       }
     };
 
     handleResize();
+
+    // Multiple layout passes for iframe stabilization
+    const t1 = setTimeout(handleResize, 60);
+    const t2 = setTimeout(handleResize, 240);
+
     const observer = new ResizeObserver(handleResize);
     if (containerRef.current) {
       observer.observe(containerRef.current);
     }
 
-    return () => observer.disconnect();
-  }, []);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      observer.disconnect();
+    };
+  }, [currentLevel, centerCameraOnLevel]);
 
   // Calculate budget & money spent
   const moneySpent = beams.reduce((sum, b) => sum + b.cost, 0);
@@ -425,6 +450,7 @@ export default function App() {
         const newZoom = Math.min(2.5, Math.max(0.6, initialPinchZoomRef.current * factor));
 
         if (lastPanPosRef.current) {
+          hasUserPannedRef.current = true;
           const dx = (currentMid.x - lastPanPosRef.current.x) / cameraRef.current.zoom;
           const dy = (currentMid.y - lastPanPosRef.current.y) / cameraRef.current.zoom;
           cameraRef.current.x -= dx;
@@ -439,6 +465,7 @@ export default function App() {
 
     // Single-pointer Camera Pan
     if (lastPanPosRef.current && (activeTool === 'pan' || mode === 'test' || e.buttons === 2 || e.buttons === 4)) {
+      hasUserPannedRef.current = true;
       const dx = (screenX - lastPanPosRef.current.x) / cameraRef.current.zoom;
       const dy = (screenY - lastPanPosRef.current.y) / cameraRef.current.zoom;
       cameraRef.current.x -= dx;
@@ -598,6 +625,7 @@ export default function App() {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
+    hasUserPannedRef.current = true;
     const worldBefore = GameRenderer.screenToWorld(mouseX, mouseY, cameraRef.current);
 
     const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1;
@@ -631,7 +659,7 @@ export default function App() {
                 currentLevel.twoStarBudget
               );
               setVictoryStars(res.stars);
-              setProgress(loadLevelProgress());
+              setProgress(res.nextProgress);
               setShowVictoryModal(true);
             } else if (physicsRef.current.isLevelFailed && !showFailureModal) {
               setFailureReason(physicsRef.current.failureReason);
@@ -723,7 +751,11 @@ export default function App() {
         onToggleSound={() => setSoundEnabled(sound.toggleSound())}
         onOpenLevels={() => setShowLevelModal(true)}
         onOpenHelp={() => setShowHelpModal(true)}
-        onResetZoom={() => centerCameraOnLevel(currentLevel)}
+        onOpenCover={() => setShowCoverModal(true)}
+        onResetZoom={() => {
+          hasUserPannedRef.current = false;
+          centerCameraOnLevel(currentLevel);
+        }}
       />
 
       {/* Main Interactive Stage Container */}
@@ -743,6 +775,13 @@ export default function App() {
           onContextMenu={(e) => e.preventDefault()}
           className="absolute inset-0 block w-full h-full"
         />
+
+        {/* Floating Watermark on all levels */}
+        <div className="absolute bottom-2 right-2 pointer-events-none select-none z-10 hidden sm:flex items-center gap-1.5 opacity-60">
+          <span className="text-[10px] font-mono font-bold tracking-wider px-2 py-0.5 rounded-full bg-slate-900/80 text-slate-300 border border-slate-700/60 shadow-sm">
+            @GmedranoTIC
+          </span>
+        </div>
 
         {/* Floating Quick Helper Badge on Mobile */}
         {mode === 'edit' && (
@@ -775,12 +814,31 @@ export default function App() {
         gridEnabled={gridEnabled}
         onToggleGrid={() => setGridEnabled(!gridEnabled)}
         onZoomIn={() => {
+          hasUserPannedRef.current = true;
           cameraRef.current.zoom = Math.min(2.5, cameraRef.current.zoom * 1.2);
         }}
         onZoomOut={() => {
+          hasUserPannedRef.current = true;
           cameraRef.current.zoom = Math.max(0.5, cameraRef.current.zoom * 0.8);
         }}
         disabled={mode === 'test'}
+      />
+
+      {/* Initial / On-Demand Game Cover Screen */}
+      <CoverModal
+        isOpen={showCoverModal}
+        onStartGame={() => setShowCoverModal(false)}
+        onOpenLevels={() => {
+          setShowCoverModal(false);
+          setShowLevelModal(true);
+        }}
+        onOpenHelp={() => {
+          setShowCoverModal(false);
+          setShowHelpModal(true);
+        }}
+        onClose={() => setShowCoverModal(false)}
+        completedLevelsCount={Object.values(progress).filter((p) => p.completed).length}
+        totalLevelsCount={LEVELS.length}
       />
 
       {/* Modals */}
@@ -828,7 +886,13 @@ export default function App() {
           currentLevelId={currentLevel.id}
           onSelectLevel={(lvlId) => {
             const idx = LEVELS.findIndex((l) => l.id === lvlId);
-            if (idx !== -1) setLevelIndex(idx);
+            if (idx !== -1) {
+              hasUserPannedRef.current = false;
+              setLevelIndex(idx);
+            }
+          }}
+          onUpdateProgress={(newProgress) => {
+            setProgress(newProgress);
           }}
           onClose={() => setShowLevelModal(false)}
         />

@@ -97,10 +97,8 @@ export class GameRenderer {
 
     ctx.restore();
 
-    // 10. Screen-space Overlays / crosshair
-    if (mode === 'edit') {
-      this.drawScreenOverlay(rc);
-    }
+    // 10. Screen-space Overlays (HUD and Watermark)
+    this.drawScreenOverlay(rc);
 
     ctx.restore();
   }
@@ -194,6 +192,24 @@ export class GameRenderer {
     ctx.lineTo(0, height);
     ctx.closePath();
     ctx.fill();
+
+    // Floating animated clouds
+    const t = Date.now() / 9000;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    const cloudPresets = [
+      { bx: 0.15, by: 0.14, r: 24 },
+      { bx: 0.52, by: 0.10, r: 32 },
+      { bx: 0.82, by: 0.18, r: 22 },
+    ];
+    cloudPresets.forEach((c) => {
+      const cx = ((c.bx * width + t * 45) % (width + 140)) - 70;
+      const cy = height * c.by;
+      ctx.beginPath();
+      ctx.arc(cx, cy, c.r, 0, Math.PI * 2);
+      ctx.arc(cx + c.r * 0.7, cy - c.r * 0.25, c.r * 0.75, 0, Math.PI * 2);
+      ctx.arc(cx + c.r * 1.35, cy, c.r * 0.65, 0, Math.PI * 2);
+      ctx.fill();
+    });
   }
 
   private static drawTerrain(rc: RenderContext) {
@@ -394,10 +410,10 @@ export class GameRenderer {
     ctx.fillStyle = '#92400e';
     ctx.fillRect(rightPlatform.x + 35, rightPlatform.y - 45, 5, 45);
     ctx.fillStyle = '#eab308';
-    ctx.fillRect(rightPlatform.x + 25, rightPlatform.y - 45, 25, 16);
+    ctx.fillRect(rightPlatform.x + 17, rightPlatform.y - 45, 38, 16);
     ctx.fillStyle = '#0f172a';
     ctx.font = 'bold 8px sans-serif';
-    ctx.fillText('CARGA', rightPlatform.x + 27, rightPlatform.y - 34);
+    ctx.fillText('CARGA', rightPlatform.x + 22, rightPlatform.y - 34);
   }
 
   private static drawCargos(rc: RenderContext) {
@@ -410,25 +426,27 @@ export class GameRenderer {
       ctx.translate(cargo.x, cargo.y);
 
       if (mode === 'edit') {
+        const boxW = cargo.type === 'elephant' ? 44 : 24;
+        const boxH = cargo.type === 'elephant' ? 32 : 24;
         ctx.fillStyle = 'rgba(234, 179, 8, 0.2)';
         ctx.strokeStyle = '#eab308';
         ctx.lineWidth = 2;
-        ctx.fillRect(-12, -24, 24, 24);
-        ctx.strokeRect(-12, -24, 24, 24);
+        ctx.fillRect(-boxW / 2, -boxH, boxW, boxH);
+        ctx.strokeRect(-boxW / 2, -boxH, boxW, boxH);
 
         ctx.fillStyle = '#eab308';
         ctx.font = 'bold 9px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(`${cargo.weight}kg`, 0, -28);
+        ctx.fillText(`${cargo.weight}kg`, 0, -boxH - 4);
       } else {
-        this.renderCargoGraphic(ctx, cargo);
+        this.renderCargoGraphic(ctx, cargo, 1);
       }
 
       ctx.restore();
     });
   }
 
-  public static renderCargoGraphic(ctx: CanvasRenderingContext2D, cargo: CargoItem) {
+  public static renderCargoGraphic(ctx: CanvasRenderingContext2D, cargo: CargoItem, facing: number = 1) {
     ctx.save();
     if (cargo.type === 'crate') {
       // Wooden Crate
@@ -487,6 +505,94 @@ export class GameRenderer {
       ctx.strokeStyle = '#ca8a04';
       ctx.lineWidth = 2;
       ctx.stroke();
+    } else if (cargo.type === 'elephant') {
+      // Grand Elephant Cargo
+      // 1. Legs
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(-18, -10, 8, 10);
+      ctx.fillRect(-6, -10, 8, 10);
+      ctx.fillRect(4, -10, 8, 10);
+      ctx.fillRect(14, -10, 8, 10);
+      // Toenails
+      ctx.fillStyle = '#e2e8f0';
+      for (const lx of [-18, -6, 4, 14]) {
+        ctx.fillRect(lx + 1, -2, 2, 2);
+        ctx.fillRect(lx + 4, -2, 2, 2);
+      }
+
+      // 2. Body
+      ctx.fillStyle = '#64748b';
+      ctx.beginPath();
+      ctx.roundRect(-22, -28, 40, 22, [14, 14, 4, 6]);
+      ctx.fill();
+
+      // 3. Ornate saddle / blanket
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(-14, -28, 22, 14);
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-14, -28, 22, 14);
+      // Gold fringe dots
+      ctx.fillStyle = '#facc15';
+      for (let fx = -12; fx <= 6; fx += 4) {
+        ctx.beginPath();
+        ctx.arc(fx, -14, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 4. Head
+      ctx.fillStyle = '#64748b';
+      ctx.beginPath();
+      ctx.arc(18, -20, 11, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 5. Large Ear
+      ctx.fillStyle = '#475569';
+      ctx.beginPath();
+      ctx.ellipse(12, -20, 7, 10, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fbcfe8'; // pink inner ear
+      ctx.beginPath();
+      ctx.ellipse(12, -20, 4.5, 7, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 6. Trunk
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(24, -16);
+      ctx.quadraticCurveTo(32, -10, 29, 2);
+      ctx.quadraticCurveTo(27, 8, 33, 6);
+      ctx.stroke();
+
+      // 7. Ivory Tusk
+      ctx.strokeStyle = '#fef08a';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(22, -14);
+      ctx.quadraticCurveTo(28, -12, 30, -6);
+      ctx.stroke();
+
+      // 8. Eye
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(20, -22, 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(20.8, -22.5, 0.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 9. Tail
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-22, -22);
+      ctx.quadraticCurveTo(-26, -16, -24, -10);
+      ctx.stroke();
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(-26, -11, 4, 3);
     } else {
       // Anvil
       ctx.fillStyle = '#1e293b';
@@ -495,12 +601,30 @@ export class GameRenderer {
       ctx.fillRect(-14, -22, 28, 6);
     }
 
-    // Weight badge
-    ctx.fillStyle = '#0f172a';
-    ctx.font = 'bold 8px monospace';
+    // Weight badge: ALWAYS upright and unmirrored (solves reversed number on return)
+    ctx.save();
+    if (facing < 0) {
+      // Counter-flip horizontally so text is NEVER reversed/mirrored
+      ctx.scale(-1, 1);
+    }
+    const badgeText = `${cargo.weight}kg`;
+    ctx.font = 'bold 9px monospace';
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const textWidth = ctx.measureText(badgeText).width;
+
+    const pillY = cargo.type === 'elephant' ? -42 : -28;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.beginPath();
+    ctx.roundRect(-textWidth / 2 - 4, pillY - 7, textWidth + 8, 14, 4);
+    ctx.fill();
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(`${cargo.weight}kg`, 0, -26);
+    ctx.fillText(badgeText, 0, pillY);
+    ctx.restore();
 
     ctx.restore();
   }
@@ -673,6 +797,16 @@ export class GameRenderer {
         ctx.strokeStyle = isAnchor ? '#ffffff' : '#94a3b8';
         ctx.lineWidth = 1.5;
         ctx.stroke();
+
+        // Floor joint tension stress indicator (uniones entre barras del suelo a tracción)
+        if (!joint.fixed && joint.tensionStress && joint.tensionStress > 0.02) {
+          const tRatio = Math.min(1, joint.tensionStress / 0.052);
+          ctx.strokeStyle = tRatio > 0.75 ? '#ef4444' : '#f97316';
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.arc(0, 0, 6.5 + tRatio * 5, 0, Math.PI * 2);
+          ctx.stroke();
+        }
       }
 
       ctx.restore();
@@ -760,6 +894,9 @@ export class GameRenderer {
       if (worker.state === 'falling') {
         // Tumbling / flailing animation
         ctx.rotate((worker.vy * 0.4));
+      } else if (worker.isStruggling) {
+        // Leaning forward with heavy exertion pushing uphill
+        ctx.rotate(0.20);
       }
 
       // 1. Legs animation
@@ -801,17 +938,47 @@ export class GameRenderer {
       ctx.arc(0, -21, 4.5, 0, Math.PI * 2);
       ctx.fill();
 
-      // Eye
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(1, -22, 1.5, 1.5);
+      if (worker.state === 'falling') {
+        // Terrified scream face!
+        // Wide open screaming mouth
+        ctx.fillStyle = '#7f1d1d';
+        ctx.beginPath();
+        ctx.ellipse(1.5, -20, 2.2, 3.2, 0, 0, Math.PI * 2);
+        ctx.fill();
 
-      // Yellow Hard Hat (Iconic Cargo Bridge look)
-      ctx.fillStyle = '#facc15';
-      ctx.beginPath();
-      ctx.arc(0, -23, 6, Math.PI, 0);
-      ctx.fill();
-      // Hat visor
-      ctx.fillRect(-6, -23, 13, 2.5);
+        // Bulging terrified eyes
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(1.5, -23.5, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(1.8, -23.5, 1, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Flying hat tipped back
+        ctx.save();
+        ctx.translate(-2, -26);
+        ctx.rotate(-0.35);
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(0, 0, 6, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(-6, 0, 13, 2.5);
+        ctx.restore();
+      } else {
+        // Normal eye
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(1, -22, 1.5, 1.5);
+
+        // Yellow Hard Hat (Iconic Cargo Bridge look)
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(0, -23, 6, Math.PI, 0);
+        ctx.fill();
+        // Hat visor
+        ctx.fillRect(-6, -23, 13, 2.5);
+      }
 
       // 4. Arms & Carried Cargo
       if (worker.cargoId) {
@@ -824,14 +991,34 @@ export class GameRenderer {
         ctx.lineTo(6, -26);
         ctx.stroke();
 
-        // Render carried cargo
+        // Render carried cargo (facing passed to keep numbers upright)
         const cargo = cargos.find((c) => c.id === worker.cargoId);
         if (cargo) {
           ctx.save();
-          ctx.translate(6, -28);
-          this.renderCargoGraphic(ctx, cargo);
+          const offsetY = cargo.type === 'elephant' ? -34 : -28;
+          ctx.translate(6, offsetY);
+          this.renderCargoGraphic(ctx, cargo, worker.facing);
           ctx.restore();
+
+          // Sweat drops under heavy load or elephant
+          if (cargo.weight >= 130 || cargo.type === 'elephant') {
+            const sweatY = -24 + ((Date.now() / 120) % 8);
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.arc(-8, sweatY, 1.8, 0, Math.PI * 2);
+            ctx.fill();
+          }
         }
+      } else if (worker.state === 'falling') {
+        // Flailing arms in the air
+        ctx.strokeStyle = '#dc2626';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(-2, -14);
+        ctx.lineTo(-8, -26);
+        ctx.moveTo(2, -14);
+        ctx.lineTo(8, -26);
+        ctx.stroke();
       } else {
         // Idle swinging arms
         ctx.strokeStyle = '#dc2626';
@@ -840,6 +1027,31 @@ export class GameRenderer {
         ctx.moveTo(0, -14);
         ctx.lineTo(Math.cos(legAngle) * 6, -8);
         ctx.stroke();
+      }
+
+      // 5. Struggle warning bubble if stuck on steep hill
+      if (worker.isStruggling && worker.stuckTimer && worker.stuckTimer > 15) {
+        ctx.save();
+        if (worker.facing < 0) {
+          ctx.scale(-1, 1);
+        }
+        const badgeY = worker.cargoId ? -60 : -42;
+        const msg = worker.cargoId ? '💦 ¡Demasiado peso!' : '⚠️ ¡Mucha cuesta!';
+        ctx.font = 'bold 9px sans-serif';
+        const tw = ctx.measureText(msg).width;
+        ctx.fillStyle = 'rgba(220, 38, 38, 0.95)';
+        ctx.beginPath();
+        ctx.roundRect(-tw / 2 - 5, badgeY - 14, tw + 10, 16, 4);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(msg, 0, badgeY - 6);
+        ctx.restore();
       }
 
       ctx.restore();
@@ -891,6 +1103,17 @@ export class GameRenderer {
       ctx.textAlign = 'center';
       ctx.fillText('Presupuesto insuficiente para este tramo', width / 2, 48);
     }
+
+    // Watermark on all levels
+    ctx.save();
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.font = 'bold 12px "Courier New", monospace';
+    ctx.fillStyle = rc.mode === 'edit' ? 'rgba(255, 255, 255, 0.40)' : 'rgba(255, 255, 255, 0.65)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 4;
+    ctx.fillText('📐 GmedranoTIC', width - 16, height - 12);
+    ctx.restore();
 
     ctx.restore();
   }

@@ -6,6 +6,7 @@ export interface MaterialProperties {
   costPerMeter: number; // Cost per 10 pixels / meter
   maxSpan: number; // Max distance in world coords
   strength: number; // Max stress before breaking
+  tensileStrength: number; // Resistance under traction/tension
   density: number; // Weight/mass factor
   isWalkable: boolean; // Can workers walk on it?
   color: string;
@@ -22,6 +23,7 @@ export interface Joint {
   fixed: boolean; // Cannot move (anchor)
   anchorId?: string; // If attached to a cliff anchor
   radius: number;
+  tensionStress?: number; // Tension experienced at walkway joint union
 }
 
 export interface Beam {
@@ -38,7 +40,7 @@ export interface Beam {
 export interface CargoItem {
   id: string;
   name: string;
-  type: 'crate' | 'safe' | 'barrel' | 'gold' | 'anvil';
+  type: 'crate' | 'safe' | 'barrel' | 'gold' | 'anvil' | 'elephant';
   x: number;
   y: number;
   weight: number; // Heavy loads stress the bridge more!
@@ -61,6 +63,11 @@ export interface WorkerActor {
   assignedCargoId: string;
   targetX: number;
   onGround: boolean;
+  hasSplashed?: boolean;
+  isStruggling?: boolean;
+  slope?: number;
+  incline?: number;
+  stuckTimer?: number;
 }
 
 export interface CliffTerrain {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, RotateCcw, Volume2, VolumeX, HelpCircle, Map, Maximize2, ShieldAlert } from 'lucide-react';
+import { Play, RotateCcw, Volume2, VolumeX, HelpCircle, Map, Maximize2, ShieldAlert, BookOpen } from 'lucide-react';
 import { LevelDef } from '../types';
 
 interface HeaderProps {
@@ -14,6 +14,7 @@ interface HeaderProps {
   onOpenLevels: () => void;
   onOpenHelp: () => void;
   onResetZoom: () => void;
+  onOpenCover?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -28,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenLevels,
   onOpenHelp,
   onResetZoom,
+  onOpenCover,
 }) => {
   const isOverBudget = budgetRemaining < 0;
   const budgetRatio = Math.max(0, Math.min(1, budgetRemaining / level.budget));
@@ -36,6 +38,17 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-3 py-2 sm:px-4 sm:py-2.5 flex items-center justify-between gap-2 select-none z-20">
       {/* Left: Level Title & Level Select */}
       <div className="flex items-center gap-2 min-w-0">
+        {onOpenCover && (
+          <button
+            onClick={onOpenCover}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition-colors text-xs sm:text-sm font-semibold cursor-pointer shrink-0"
+            title="Abrir Portada y Guía Didáctica (@GmedranoTIC)"
+          >
+            <BookOpen className="w-4 h-4 text-amber-400" />
+            <span className="hidden md:inline">Portada</span>
+          </button>
+        )}
+
         <button
           onClick={onOpenLevels}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 transition-colors text-xs sm:text-sm font-semibold cursor-pointer shrink-0"
@@ -52,6 +65,9 @@ export const Header: React.FC<HeaderProps> = ({
             </h1>
             <span className="hidden md:inline-block px-1.5 py-0.5 rounded text-[11px] bg-slate-800 text-slate-400 border border-slate-700">
               Presupuesto: ${level.budget}
+            </span>
+            <span className="hidden lg:inline-block px-1.5 py-0.5 rounded text-[10px] font-mono bg-sky-950/70 text-sky-400 border border-sky-800/50">
+              @GmedranoTIC
             </span>
           </div>
           <p className="text-slate-400 text-xs truncate hidden sm:block">

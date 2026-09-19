@@ -4,9 +4,10 @@ export const MATERIALS: Record<MaterialType, MaterialProperties> = {
   walkway: {
     type: 'walkway',
     name: 'Pasarela',
-    costPerMeter: 14,
+    costPerMeter: 10,
     maxSpan: 120,
-    strength: 1.0,
+    strength: 0.3,
+    tensileStrength: 0.07, // Límite de unión a tracción entre barras del suelo
     density: 1.0,
     isWalkable: true,
     color: '#d97706', // warm wooden amber
@@ -19,6 +20,7 @@ export const MATERIALS: Record<MaterialType, MaterialProperties> = {
     costPerMeter: 8,
     maxSpan: 140,
     strength: 0.9,
+    tensileStrength: 0.75,
     density: 0.6,
     isWalkable: false,
     color: '#b45309', // darker brown
@@ -31,6 +33,7 @@ export const MATERIALS: Record<MaterialType, MaterialProperties> = {
     costPerMeter: 24,
     maxSpan: 150,
     strength: 2.3,
+    tensileStrength: 2.2,
     density: 1.8,
     isWalkable: false,
     color: '#475569', // slate steel
@@ -43,6 +46,7 @@ export const MATERIALS: Record<MaterialType, MaterialProperties> = {
     costPerMeter: 10,
     maxSpan: 220,
     strength: 1.7,
+    tensileStrength: 2.0,
     density: 0.4,
     isWalkable: false,
     color: '#94a3b8', // light steel cable
