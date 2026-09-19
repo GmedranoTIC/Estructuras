@@ -9,6 +9,11 @@
     <meta property="og:description" content="Juego clásico de física y construcción de puentes con controles táctiles adaptados, simulación de estrés y compatible con GitHub Pages." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <!-- Favicon para navegadores modernos, iOS y compatibilidad universal -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f172a'/%3E%3Cpath d='M3 22 L11 10 L21 10 L29 22 Z' stroke='%23f59e0b' stroke-width='2.2' fill='none' stroke-linejoin='round'/%3E%3Cline x1='11' y1='10' x2='16' y2='22' stroke='%23f59e0b' stroke-width='1.8'/%3E%3Cline x1='21' y1='10' x2='16' y2='22' stroke='%23f59e0b' stroke-width='1.8'/%3E%3Cline x1='1' y1='22' x2='31' y2='22' stroke='%2338bdf8' stroke-width='2.8' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link rel="icon" type="image/x-icon" href="./favicon.ico" />
+    <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico" />
+    <link rel="apple-touch-icon" href="./favicon.ico" />
     <script>
       // Asegurar barra diagonal final en GitHub Pages (ej. /repo -> /repo/)
       // para que las rutas relativas a ./assets/ funcionen en cualquier subcarpeta
@@ -37,46 +42,79 @@
     </div>
     <script type="module" src="./src/main.tsx"></script>
     <script>
-      // Soporte universal para GitHub Pages:
-      // Cuando se aloja en GitHub Pages sin un servidor Vite activo, los navegadores
-      // no pueden ejecutar archivos .tsx de TypeScript directamente.
-      // Si a los 250ms React no ha sustituido la pantalla de carga, inyectamos
-      // el paquete compilado de producción (assets/app.js y assets/app.css).
+      // Soporte universal resiliente para GitHub Pages:
+      // Cuando se ejecuta en GitHub Pages (sin servidor Vite activo), los navegadores
+      // no ejecutan archivos TypeScript (.tsx) directamente.
+      // Si a los 250ms React no ha montado, intentamos cargar los bundles compilados
+      // verificando las rutas posibles: ./assets/app.js, ./docs/assets/app.js o el bundle en docs.
       (function() {
         var v = '?v=' + Date.now();
+        var candidateStyles = [
+          './assets/app.css',
+          './docs/assets/app.css',
+          './docs/assets/index-BtW3Qb34.css'
+        ];
+        var candidateScripts = [
+          './assets/app.js',
+          './docs/assets/app.js',
+          './docs/assets/index-CwnglBNx.js'
+        ];
+
         function checkAndFallback() {
           var root = document.getElementById('root');
-          if (root && root.querySelector('.loading-spinner-wrap')) {
-            console.log('[GitHub Pages] Cargando paquete compilado de produccion...');
-            
-            if (!document.getElementById('app-css-bundle')) {
-              var link = document.createElement('link');
-              link.id = 'app-css-bundle';
-              link.rel = 'stylesheet';
-              link.href = './assets/app.css' + v;
-              document.head.appendChild(link);
+          if (!root || !root.querySelector('.loading-spinner-wrap')) {
+            return;
+          }
+
+          console.log('[GitHub Pages] Verificando bundles de producción...');
+          
+          // Inyectar hojas de estilo candidatas
+          candidateStyles.forEach(function(href) {
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href + v;
+            document.head.appendChild(link);
+          });
+
+          // Carga secuencial resiliente del script
+          var currentIdx = 0;
+          function tryNextScript() {
+            if (currentIdx >= candidateScripts.length) {
+              console.error('No se pudo cargar ningún bundle de scripts.');
+              var errBox = document.getElementById('loading-error-box');
+              if (errBox) {
+                errBox.style.display = 'block';
+                errBox.innerHTML = '<strong>No se pudo cargar el juego:</strong><br>' +
+                  '<span style="font-size:12px;color:#fca5a5;">' +
+                  'No se encontró ni <code>assets/app.js</code> ni <code>docs/assets/app.js</code> en el repositorio.<br><br>' +
+                  '• <strong>Opción 1:</strong> Sube la carpeta <code>assets</code> a la raíz de tu repositorio.<br>' +
+                  '• <strong>Opción 2:</strong> En los ajustes de tu repositorio (Settings &gt; Pages), cambia Source a <strong>Branch: main / Folder: /docs</strong>.' +
+                  '</span>';
+              }
+              return;
             }
 
-            if (!document.getElementById('app-js-bundle')) {
-              var script = document.createElement('script');
-              script.id = 'app-js-bundle';
-              script.type = 'module';
-              script.src = './assets/app.js' + v;
-              script.onerror = function(err) {
-                console.error('Error al cargar assets/app.js:', err);
-                var errBox = document.getElementById('loading-error-box');
-                if (errBox) {
-                  errBox.style.display = 'block';
-                  errBox.innerHTML = '<strong>No se pudo cargar el archivo <code>assets/app.js</code></strong><br><span style="font-size:12px;color:#f87171;">Asegúrate de que la carpeta <code>assets</code> y el archivo <code>.nojekyll</code> existen en tu repositorio de GitHub Pages.</span>';
-                }
-              };
-              document.body.appendChild(script);
-            }
+            var src = candidateScripts[currentIdx++];
+            console.log('[GitHub Pages] Intentando cargar script:', src);
+
+            var script = document.createElement('script');
+            script.type = 'module';
+            script.src = src + v;
+            script.onload = function() {
+              console.log('[GitHub Pages] Bundle cargado con éxito desde:', src);
+            };
+            script.onerror = function() {
+              console.warn('[GitHub Pages] No disponible en:', src + ', intentando siguiente ruta...');
+              script.remove();
+              tryNextScript();
+            };
+            document.body.appendChild(script);
           }
+
+          tryNextScript();
         }
 
         setTimeout(checkAndFallback, 250);
-        setTimeout(checkAndFallback, 900);
       })();
     </script>
   </body>
