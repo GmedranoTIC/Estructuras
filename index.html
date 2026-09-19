@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>Estructuras para puentes - GmedranoTIC</title>
+    <title>Cargo Bridge</title>
     <meta name="description" content="Juego clásico de física y construcción de puentes con controles táctiles adaptados, simulación de estrés y compatible con GitHub Pages." />
     <meta property="og:title" content="Estructuras para puentes" />
     <meta property="og:description" content="Juego clásico de física y construcción de puentes con controles táctiles adaptados, simulación de estrés y compatible con GitHub Pages." />
@@ -31,37 +31,53 @@
         <div style="width:48px;height:48px;border:3px solid #334155;border-top-color:#f59e0b;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px;"></div>
         <h2 style="color:#f59e0b;font-size:20px;font-weight:bold;margin:0 0 8px 0;">Cargando el juego para construir puentes...</h2>
         <p style="font-size:13px;color:#94a3b8;max-width:420px;margin:0;line-height:1.5;">Estructuras ESO • @GmedranoTIC</p>
+        <div id="loading-error-box" style="display:none;margin-top:16px;padding:12px 16px;background:#450a0a;color:#fca5a5;border:1px solid #ef4444;border-radius:12px;font-size:13px;max-width:440px;line-height:1.5;box-shadow:0 10px 25px -5px rgba(0,0,0,0.5);"></div>
       </div>
       <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
     </div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="./src/main.tsx"></script>
     <script>
       // Soporte universal para GitHub Pages:
-      // Si se publica desde la raíz / de GitHub Pages (donde no hay servidor Vite activo),
-      // el navegador no puede interpretar /src/main.tsx. Este script detecta si React aún no
-      // ha montado en 150ms e inyecta automáticamente el bundle de producción compilado (assets/app.js).
-      setTimeout(function() {
-        var root = document.getElementById('root');
-        if (root && root.querySelector('.loading-spinner-wrap')) {
-          console.log('Iniciando carga de assets/app.js para GitHub Pages...');
-          if (!document.getElementById('gh-pages-app-css')) {
-            var link = document.createElement('link');
-            link.id = 'gh-pages-app-css';
-            link.rel = 'stylesheet';
-            link.crossOrigin = 'anonymous';
-            link.href = './assets/app.css';
-            document.head.appendChild(link);
-          }
-          if (!document.getElementById('gh-pages-app-js')) {
-            var script = document.createElement('script');
-            script.id = 'gh-pages-app-js';
-            script.type = 'module';
-            script.crossOrigin = 'anonymous';
-            script.src = './assets/app.js';
-            document.body.appendChild(script);
+      // Cuando se aloja en GitHub Pages sin un servidor Vite activo, los navegadores
+      // no pueden ejecutar archivos .tsx de TypeScript directamente.
+      // Si a los 250ms React no ha sustituido la pantalla de carga, inyectamos
+      // el paquete compilado de producción (assets/app.js y assets/app.css).
+      (function() {
+        var v = '?v=' + Date.now();
+        function checkAndFallback() {
+          var root = document.getElementById('root');
+          if (root && root.querySelector('.loading-spinner-wrap')) {
+            console.log('[GitHub Pages] Cargando paquete compilado de produccion...');
+            
+            if (!document.getElementById('app-css-bundle')) {
+              var link = document.createElement('link');
+              link.id = 'app-css-bundle';
+              link.rel = 'stylesheet';
+              link.href = './assets/app.css' + v;
+              document.head.appendChild(link);
+            }
+
+            if (!document.getElementById('app-js-bundle')) {
+              var script = document.createElement('script');
+              script.id = 'app-js-bundle';
+              script.type = 'module';
+              script.src = './assets/app.js' + v;
+              script.onerror = function(err) {
+                console.error('Error al cargar assets/app.js:', err);
+                var errBox = document.getElementById('loading-error-box');
+                if (errBox) {
+                  errBox.style.display = 'block';
+                  errBox.innerHTML = '<strong>No se pudo cargar el archivo <code>assets/app.js</code></strong><br><span style="font-size:12px;color:#f87171;">Asegúrate de que la carpeta <code>assets</code> y el archivo <code>.nojekyll</code> existen en tu repositorio de GitHub Pages.</span>';
+                }
+              };
+              document.body.appendChild(script);
+            }
           }
         }
-      }, 150);
+
+        setTimeout(checkAndFallback, 250);
+        setTimeout(checkAndFallback, 900);
+      })();
     </script>
   </body>
 </html>
